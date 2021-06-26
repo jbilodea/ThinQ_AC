@@ -19,7 +19,30 @@ metadata {
         capability "Switch"
         capability "Initialize"
 
-        attribute "windStrength", "number"
+    attribute "wDir.hStep", "number"
+    attribute "windStrength", "number"
+    attribute "quality.PM10", "number"
+    attribute "tempState.current", "number"
+    attribute "quality.overall", "number"
+    attribute "reservation.targetTimeToStart", "number"
+    attribute "reservation.targetTimeToStop", "number"
+    attribute "tempState.target", "number"
+    attribute "wMode.jet", "number"
+    attribute "wDir.vStep", "number"
+    attribute "powerSave.basic", "number"
+    attribute "quality.PM1", "number"
+    attribute "quality.PM2", "number"
+    attribute "diagCode", "number"
+    attribute "operation", "number"
+    attribute "miscFuncState.extraOp", "number"
+    attribute "wMode.lowHeating", "number"
+    attribute "lightingState.displayControl", "number"
+    attribute "wMode.airClean", "number"
+    attribute "quality.sensorMon", "number"
+    attribute "miscFuncState.antiBugs", "number"
+    attribute "reservation.sleepTime", "number"
+    attribute "miscFuncState.autoDry", "number"
+    attribute "opMode", "number"
     }
 
     preferences {
@@ -150,59 +173,78 @@ def processStateData(data) {
     def miscFuncStateautoDry = 0
     def opMode = 0
 
-
-    wDirhStep = (data["wDir.hStep"])
-    windStrength = (data["windStrength"])
-    qualityPM10 = (data["quality.PM10"])
-    tempStatecurrent = (data["tempState.current"])
-    qualityoverall = (data["quality.overall"])
-    reservationtargetTimeToStart = (data["reservation.targetTimeToStart"])
-    reservationtargetTimeToStop = (data["reservation.targetTimeToStop"])
-    tempStatetarget = (data["tempState.target"])
-    wModejet = (data["wMode.jet"])
-    wDirvStep = (data["wDir.vStep"])
-    powerSavebasic = (data["powerSave.basic"])
-    qualityPM1 = (data["quality.PM1"])
-    qualityPM2 = (data["quality.PM2"])
-    diagCode = (data["diagCode"])
-    operation = (data["operation"])
-    miscFuncStateextraOp = (data["miscFuncState.extraOp"])
-    wModelowHeating = (data["wMode.lowHeating"])
-    lightingStatedisplayControl = (data["lightingState.displayControl"])
-    wModeairClean = (data["wMode.airClean"])
-    qualitysensorMon = (data["quality.sensorMon"])
-    miscFuncStateantiBugs = (data["miscFuncState.antiBugs"])
-    reservationsleepTime = (data["reservation.sleepTime"])
-    miscFuncStateautoDry = (data["miscFuncState.autoDry"])
-    opMode = (data["opMode"])
- 
-    sendEvent(name: "wDir.hStep", value: wDirhStep)
-    sendEvent(name: "windStrength", value: windStrength)
-    sendEvent(name: "quality.PM10", value: qualityPM10)
-    sendEvent(name: "tempState.current", value: tempStatecurrent)
-    sendEvent(name: "quality.overall", value: qualityoverall)
-    sendEvent(name: "reservation.targetTimeToStart", value: reservationtargetTimeToStart)
-    sendEvent(name: "reservation.targetTimeToStop", value: reservationtargetTimeToStop)
-    sendEvent(name: "tempState.target", value: tempStatetarget)
-    sendEvent(name: "wMode.jet", value: wModejet)
-    sendEvent(name: "wDir.vStep", value: wDirvStep)
-    sendEvent(name: "powerSave.basic", value: powerSavebasic)
-    sendEvent(name: "quality.PM1", value: qualityPM1)
-    sendEvent(name: "quality.PM2", value: qualityPM2)
-    sendEvent(name: "diagCode", value: diagCode)
-    sendEvent(name: "operation", value: operation)
-    sendEvent(name: "miscFuncState.extraOp", value: miscFuncStateextraOp)
-    sendEvent(name: "wMode.lowHeating", value: wModelowHeating)
-    sendEvent(name: "lightingState.displayControl", value: lightingStatedisplayControl)
-    sendEvent(name: "wMode.airClean", value: wModeairClean)
-    sendEvent(name: "quality.sensorMon", value: qualitysensorMon)
-    sendEvent(name: "miscFuncState.antiBugs", value: miscFuncStateantiBugs)
-    sendEvent(name: "reservation.sleepTime", value: reservationsleepTime)
-    sendEvent(name: "miscFuncState.autoDry", value: miscFuncStateautoDry)
-    sendEvent(name: "opMode", value: opMode)
-
-
- 
+    if (parent.checkValue(data,'wDir.hStep')) {
+		wDirhStep = (data["wDir.hStep"])
+        sendEvent(name: "wDir.hStep", value: wDirhStep, displayed: false)}
+    if (parent.checkValue(data, "windStrength")) {
+		windStrength = (data["windStrength"])
+        sendEvent(name: "windStrength", value: windStrength, displayed: false)}
+    if (parent.checkValue(data, "quality.PM10")) {
+		qualityPM10 = (data["quality.PM10"])
+        sendEvent(name: "quality.PM10", value: qualityPM10, displayed: false)}
+    if (parent.checkValue(data, "tempState.current")){
+		tempStatecurrent = (data["tempState.current"])
+        sendEvent(name: "tempState.current", value: tempStatecurrent, displayed: false)}
+    if (parent.checkValue(data, "quality.overall")){
+		qualityoverall = (data["quality.overall"])
+        sendEvent(name: "quality.overall", value: qualityoverall, displayed: false)}
+    if (parent.checkValue(data, "reservation.targetTimeToStart")){
+		reservationtargetTimeToStart = (data["reservation.targetTimeToStart"])}
+    if (parent.checkValue(data, "reservation.targetTimeToStop")){
+		reservationtargetTimeToStop = (data["reservation.targetTimeToStop"])
+        sendEvent(name: "reservation.targetTimeToStart", value: reservationtargetTimeToStart, displayed: false)}
+    if (parent.checkValue(data, "tempState.target")){
+		tempStatetarget = (data["tempState.target"])
+        sendEvent(name: "tempState.target", value: tempStatetarget, displayed: false)}
+    if (parent.checkValue(data, "wMode.jet")){
+		wModejet = (data["wMode.jet"])
+        sendEvent(name: "wMode.jet", value: wModejet, displayed: false)}
+    if (parent.checkValue(data, "wDir.vStep")){
+		wDirvStep = (data["wDir.vStep"])
+        sendEvent(name: "wDir.vStep", value: wDirvStep, displayed: false)}
+    if (parent.checkValue(data, "powerSave.basic")){
+		powerSavebasic = (data["powerSave.basic"])
+        sendEvent(name: "powerSave.basic", value: powerSavebasic, displayed: false)}
+    if (parent.checkValue(data, "quality.PM1")){
+		qualityPM1 = (data["quality.PM1"])
+        sendEvent(name: "quality.PM1", value: qualityPM1, displayed: false)}
+    if (parent.checkValue(data, "quality.PM2")){
+		qualityPM2 = (data["quality.PM2"])
+        sendEvent(name: "quality.PM2", value: qualityPM2, displayed: false)}
+    if (parent.checkValue(data, "diagCode")){
+		diagCode = (data["diagCode"])
+        sendEvent(name: "diagCode", value: diagCode, displayed: false)}
+    if (parent.checkValue(data, "operation")){
+		operation = (data["operation"])
+        sendEvent(name: "operation", value: operation, displayed: false)}
+    if (parent.checkValue(data, "miscFuncState.extraOp")){
+		miscFuncStateextraOp = (data["miscFuncState.extraOp"])
+        sendEvent(name: "miscFuncState.extraOp", value: miscFuncStateextraOp, displayed: false)}
+    if (parent.checkValue(data, "wMode.lowHeating")){
+		wModelowHeating = (data["wMode.lowHeating"])
+        sendEvent(name: "wMode.lowHeating", value: wModelowHeating, displayed: false)}
+    if (parent.checkValue(data, "lightingState.displayControl")){
+		lightingStatedisplayControl = (data["lightingState.displayControl"])
+        sendEvent(name: "lightingState.displayControl", value: lightingStatedisplayControl, displayed: false)}
+    if (parent.checkValue(data, "wMode.airClean")){
+		wModeairClean = (data["wMode.airClean"])
+        sendEvent(name: "wMode.airClean", value: wModeairClean, displayed: false)}
+    if (parent.checkValue(data, "quality.sensorMon")){
+		qualitysensorMon = (data["quality.sensorMon"])
+        sendEvent(name: "quality.sensorMon", value: qualitysensorMon, displayed: false)}
+    if (parent.checkValue(data, "miscFuncState.antiBugs")){
+		miscFuncStateantiBugs = (data["miscFuncState.antiBugs"])
+        sendEvent(name: "miscFuncState.antiBugs", value: miscFuncStateantiBugs, displayed: false)}
+    if (parent.checkValue(data, "reservation.sleepTime")){
+		reservationsleepTime = (data["reservation.sleepTime"])
+        sendEvent(name: "reservation.sleepTime", value: reservationsleepTime, displayed: false)}
+    if (parent.checkValue(data, "miscFuncState.autoDry")){
+		miscFuncStateautoDry = (data["miscFuncState.autoDry"])
+        sendEvent(name: "miscFuncState.autoDry", value: miscFuncStateautoDry, displayed: false)}
+    if (parent.checkValue(data, "opMode")){
+		opMode = (data["opMode"])
+        sendEvent(name: "opMode", value: opMode, displayed: false)}
+  
       def currentStateSwitch = (currentStateName =~ /power off/ ? 'off' : 'on')
       if (device.currentValue("switch") != currentStateSwitch) {
         if(logDescText) {
