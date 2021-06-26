@@ -44,21 +44,11 @@ preferences {
 @Field static def caCertUrl = "https://www.amazontrust.com/repository/AmazonRootCA1.pem"
 
 @Field static def supportedDeviceTypes = [
-	101, // Fridge
-	201, // Washer
-	202, // Dryer
-	204, // Dishwasher
-	301, // Oven
-    401  // HVAC
+       401  // HVAC
 ]
 
 @Field static def deviceTypeConstants = [
-	Fridge: 101,
-	Washer: 201,
-	Dryer: 202,
-	Dishwasher: 204,
-	Oven: 301,
-    HVAC: 401
+       HVAC: 401
 ]
 
 @Field static def responseCodeText = [
