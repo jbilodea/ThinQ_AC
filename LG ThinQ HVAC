@@ -166,14 +166,14 @@ def processStateData(data) {
     qualityPM2 = (data["quality.PM2"])
     diagCode = (data["diagCode"])
     operation = (data["operation"])
-    miscFuncState.extraOp = (data["miscFuncState.extraOp"])
-    wMode.lowHeating = (data["wMode.lowHeating"])
-    lightingState.displayControl = (data["lightingState.displayControl"])
-    wMode.airClean = (data["wMode.airClean"])
-    quality.sensorMon = (data["quality.sensorMon"])
-    miscFuncState.antiBugs = (data["miscFuncState.antiBugs"])
-    reservation.sleepTime = (data["reservation.sleepTime"])
-    miscFuncState.autoDry = (data["miscFuncState.autoDry"])
+    miscFuncStateextraOp = (data["miscFuncState.extraOp"])
+    wModelowHeating = (data["wMode.lowHeating"])
+    lightingStatedisplayControl = (data["lightingState.displayControl"])
+    wModeairClean = (data["wMode.airClean"])
+    qualitysensorMon = (data["quality.sensorMon"])
+    miscFuncStateantiBugs = (data["miscFuncState.antiBugs"])
+    reservationsleepTime = (data["reservation.sleepTime"])
+    miscFuncStateautoDry = (data["miscFuncState.autoDry"])
     opMode = (data["opMode"])
  
     sendEvent(name: "wDir.hStep", value: wDirhStep)
@@ -200,6 +200,7 @@ def processStateData(data) {
     sendEvent(name: "reservation.sleepTime", value: reservationsleepTime)
     sendEvent(name: "miscFuncState.autoDry", value: miscFuncStateautoDry)
     sendEvent(name: "opMode", value: opMode)
+
 
  
       def currentStateSwitch = (currentStateName =~ /power off/ ? 'off' : 'on')
