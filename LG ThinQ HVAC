@@ -5,6 +5,8 @@
  *
  * This code is a copy from dmeglio@gmail.com.
  * Since I'm not a groovy coder I decided to copy his code and modify it with his agreement
+ * The work he did to create this code is AMAZING !  My work is nothing compare to him.
+ * He did 90% of the code, but he did 99.9999% of the work !
  */
 
 import groovy.transform.Field
@@ -19,28 +21,31 @@ metadata {
         capability "Switch"
         capability "Initialize"
 
-    attribute "diagCode", "number"
-    attribute "DirStep", "number"
-    attribute "lighting.display", "number"
-    attribute "miscFunc.antiBugs", "number"
-    attribute "miscFunc.autoDry", "number"
-    attribute "miscFunc.extraOp", "number"
-    attribute "Mode.airClean", "number"
-    attribute "Mode.jet", "number"
-    attribute "Mode.lowHeating", "number"
-    attribute "operation", "number"
-    attribute "opMode", "number"
-    attribute "powerSave.basic", "number"
-    attribute "quality.PM1", "number"
-    attribute "quality.PM10", "number"
-    attribute "quality.PM2", "number"
-    attribute "quality.sensorMon", "number"
-    attribute "sleepTime", "number"
-    attribute "targetTimeToStart", "number"
-    attribute "targetTimeToStop", "number"
-    attribute "temp.current", "number"
-    attribute "temp.target", "number"
+        attribute "diagCode", "number"
+        attribute "DirStep", "number"
+        attribute "lighting.display", "number"
+        attribute "miscFunc.antiBugs", "number"
+        attribute "miscFunc.autoDry", "number"
+        attribute "miscFunc.extraOp", "number"
+        attribute "Mode.airClean", "number"
+        attribute "Mode.jet", "number"
+        attribute "Mode.lowHeating", "number"
+        attribute "operation", "number"
+        attribute "opMode", "number"
+        attribute "powerSave.basic", "number"
+        attribute "quality.PM1", "number"
+        attribute "quality.PM10", "number"
+        attribute "quality.PM2", "number"
+        attribute "quality.sensorMon", "number"
+        attribute "sleepTime", "number"
+        attribute "targetTimeToStart", "number"
+        attribute "targetTimeToStop", "number"
+        attribute "temp.current", "number"
+        attribute "temp.target", "number"
+        attribute "windStrength", "number"
 
+        command "qwindStrength",   [name: "windStrength",type:"NUMBER", description: "Strength of the wind"]
+        
     }
 
     preferences {
@@ -71,23 +76,22 @@ def initialize() {
 
 def on() {
    
-    //                                  command, ctrlKey,     dataKey,             dataValue
-//    def result = parent.sendCommand(device, "Get",  "basicCtrl", "airState.windStrength", 1)
+    //                                  command,ctrlKey,     dataKey,              dataValue
     result = parent.sendCommand(device, "Set",  "basicCtrl", "airState.operation", 1)
-
-	logger("debug", "sendCommand0 ${device} ")
-	logger("debug", "sendCommand1 ${result} ")
 }
 
 def off() {
    
     //                                  command, ctrlKey,     dataKey,             dataValue
     result = parent.sendCommand(device, "Set",  "basicCtrl", "airState.operation", 0)
-
-	logger("debug", "sendCommand2 ${result} ")
-	logger("debug", "sendCommand3 ${result.data} ")
 }
-			
+
+def qwindStrength(pwindStrength) {
+   
+    if (pwindStrength != null)
+        //                                  command, ctrlKey,     dataKey,             dataValue
+        result = parent.sendCommand(device, "Set",  "basicCtrl", "airState.windStrength", pwindStrength)
+}
 
 def mqttConnectUntilSuccessful() {
   logger("debug", "mqttConnectUntilSuccessful()")
