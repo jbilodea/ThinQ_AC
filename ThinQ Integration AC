@@ -2,9 +2,9 @@
  *
  *  LG ThinQ
  *
- * This code is a copy from dmeglio@gmail.com.
- * Since I'm not a groovy coder I decided to copy his code and modify it with his agreement
- *
+											  
+																						   
+  
  *  Copyright 2020 Dominick Meglio
  *
  *	If you find this useful, donations are always appreciated
@@ -26,7 +26,7 @@ definition(
 	name: "ThinQ Integration AC",
 	namespace: "jbilodea",
 	author: "Jean Bilodeau",
-	description: "Integrate LG ThinQ AC with Hubitat.",
+	description: "Integrate LG ThinQ smart devices with Hubitat.",
 	category: "My Apps",
 	iconUrl: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience.png",
 	iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience@2x.png",
@@ -44,11 +44,21 @@ preferences {
 @Field static def caCertUrl = "https://www.amazontrust.com/repository/AmazonRootCA1.pem"
 
 @Field static def supportedDeviceTypes = [
-       401  // HVAC
+	101, // Fridge
+	201, // Washer
+	202, // Dryer
+	204, // Dishwasher
+	301, // Oven
+    401  // HVAC
 ]
 
 @Field static def deviceTypeConstants = [
-       HVAC: 401
+	Fridge: 101,
+	Washer: 201,
+	Dryer: 202,
+	Dishwasher: 204,
+	Oven: 301,
+	HVAC: 401
 ]
 
 @Field static def responseCodeText = [
@@ -154,7 +164,6 @@ preferences {
 ]
 
 def prefMain() {
-logger("debug", "JBAPP01)")    
 	if (state.client_id == null)
 		state.client_id = (UUID.randomUUID().toString()+UUID.randomUUID().toString()).replaceAll(/-/,"")
 	state.auth_retry_cnt = 0
@@ -211,6 +220,7 @@ logger("debug", "JBAPP01)")
 		}
 	}
 }
+
 def prefCert() {
 	return dynamicPage(name: "prefCert", title: "LG ThinQ OAuth", nextPage: "prefDevices", uninstall:false, install: false) {
 		section {
@@ -265,7 +275,7 @@ def prefDevices() {
 		log.debug "MODEL JSON -- PLEASE POST IN THREAD ${it.modelJsonUri}"
 		deviceList << ["${it.deviceId}":it.alias]
 		state.foundDevices << [id: it.deviceId, name: it.alias, type: it.deviceType, version: it.platformType, modelJson: getModelJson(it.modelJsonUri)]
-    }
+	}
 
 	return dynamicPage(name: "prefDevices", title: "LG ThinQ OAuth",  uninstall:false, install: true) {
 		section {
@@ -325,15 +335,15 @@ def initialize() {
 			case deviceTypeConstants.Dishwasher:
 				driverName = "LG ThinQ Dishwasher"
 				break
-			case deviceTypeConstants.HVAC:
-				driverName = "LG ThinQ HVAC"
-				break
+								 
+								
+		 
 		}
 		if (!hasV1Device)
 			hasV1Device = deviceDetails.version == "thinq1"
-        def childDevice = getChildDevice("thinq:"+deviceDetails.id)
+		def childDevice = getChildDevice("thinq:"+deviceDetails.id)
 		if (childDevice == null) {
-			childDevice = addChildDevice("dcm.thinq", driverName, "thinq:" + deviceDetails.id, 1234, ["name": deviceDetails.name,isComponent: false])
+			childDevice = addChildDevice("jbilodea", driverName, "thinq:" + deviceDetails.id, 1234, ["name": deviceDetails.name,isComponent: false])
 			if (!findMasterDevice() && deviceDetails.version == "thinq2") {
 				childDevice.updateDataValue("master", "true")
 				childDevice.initialize()
@@ -355,46 +365,34 @@ def initialize() {
 		schedule("0 */1 * * * ? *", refreshV1Devices)
 }
 
-def getDeviceSnapshot(devDetails, child) {  //obtenir le modele et le data
+def getDeviceSnapshot(devDetails, child) {
 	def data = lgAPIGet("${state.thinqUrl}/service/devices/${devDetails.id}")
 	log.debug data
-    logger("debug", "JB19a ${data}")  
 	if (data?.snapshot != null) {
-    logger("debug", "JB19b ")  
 		def dataNode = findMQTTDataNode(devDetails.modelJson, data.snapshot)
-    logger("debug", "JB20 ${dataNode}")  
-    logger("debug", "JB20b ${devDetails.modelJson.MonitoringValue}")  
-		def targetKeys = getTargetKeys(devDetails.modelJson.MonitoringValue)  //MonitoringValue a changer si les Key sont importantes, ne retourne rien
-    logger("debug", "JB21 ${targetKeys}")  
+		def targetKeys = getTargetKeys(devDetails.modelJson.MonitoringValue)
 		if (targetKeys != null) {
 			for (targetKey in targetKeys) {
 				if (dataNode."${targetKey}" != null)
-                {
-    logger("debug", "JB21a ${targetKeys}")  
-    logger("debug", "JB21b dataNode.${targetKey}")  
+				 
 					child.updateDataValue(targetKey, dataNode."${targetKey}")
-                }
+				 
 			}
 		}
 		def stateData = decodeMQTTMessage(child, devDetails.modelJson, dataNode)
-    logger("debug", "JB22 ${stateData}")  
 
 		if (stateData != null)
 			child.processStateData(stateData)
 	}
 }
 
-def getTargetKeys(values) {  //Model
-    logger("debug", "JB30a ")  
+def getTargetKeys(values) {
 	def targetKeys = []
 	for (key in values?.keySet()) {
-        logger("debug", "JB30b ${key}")  
 		if (values[key].targetKey != null) {
-            logger("debug", "JB30c ${values[key].targetKey}")  
 			def targetKey = values[key].targetKey.keySet()[0]
 			if (!targetKeys.find{ it == targetKey }) {
 				targetKeys << targetKey
-                logger("debug", "JB30d ${targetKeys}")  
 			}
 		}
 	}
@@ -487,6 +485,7 @@ def lgAPIGet(uri) {
 			}
 		}
 		logger("trace", "lgAPIGet(${uri}) - ${result}")
+		state.auth_retry_cnt = 0
 		return result
 	}
 	catch (Exception e) {
@@ -505,6 +504,8 @@ def lgAPIGet(uri) {
 						state.refresh_token = refreshResult.refresh_token
 					if (state.access_token != null & state.auth_retry_cnt < AUTH_RETRY_MAX)
 						return lgAPIGet(uri)
+					else
+						state.auth_retry_cnt = 0
 				}
 			}
 			else {
@@ -532,20 +533,16 @@ def lgAPIPost(uri, body) {
 		) {
 			resp ->
 				if (resp?.data?.resultCode == "0000")
-            {
+			 
 					result = resp.data?.result
-            logger("debug", "JB  lgAPIPost 00A ${result}")  
-            }
+			 
 				else
-                {
+				 
 					logger("error", "lgAPIPost(${uri}, ${body}) - ${responseCodeText[resp.data.resultCode]}")
-            logger("debug", "JB  lgAPIPost 00B ${result}")  
-                }
-            logger("debug", "JB  lgAPIPost 01 ${result}")  
-        }
-
+		}
+		 
+		state.auth_retry_cnt = 0
 		logger("trace", "lgAPIPost(${uri}, ${body}) - ${result}")
-            logger("debug", "JB  lgAPIPost 02 ${result}")  
 		return result
 	}
 	catch (Exception e) {
@@ -566,10 +563,9 @@ def lgAPIPost(uri, body) {
 					if (refreshResult.refresh_token)
 						state.refresh_token = refreshResult.refresh_token
 					if (state.access_token != null & state.auth_retry_cnt < AUTH_RETRY_MAX)
-                    {
-logger("debug", "JB  lgAPIPost 03 ${result}")  
 						return lgAPIPost(uri, body)
-                    }
+					else
+						state.auth_retry_cnt = 0
 				}
 			}
 			else
@@ -758,6 +754,8 @@ def lgEdmPost(url, body, refresh = true) {
 					loginv1()
 					if (state.access_token != null && refresh & state.auth_retry_cnt < AUTH_RETRY_MAX)
 						return lgEdmPost(url, body, false)
+					else
+						state.auth_retry_cnt = 0
 				}
 			}
 			else {
@@ -765,6 +763,7 @@ def lgEdmPost(url, body, refresh = true) {
 				return null
 			}
 		}
+		state.auth_retry_cnt = 0
 	}
 	catch (Exception e) {
 		def data = e?.getResponse()?.data
@@ -782,6 +781,8 @@ def lgEdmPost(url, body, refresh = true) {
 						state.refresh_token = refreshResult.refresh_token
 					if (state.access_token != null & state.auth_retry_cnt < AUTH_RETRY_MAX)
 						return lgEdmPost(url, body)
+					else
+						state.auth_retry_cnt = 0
 				}
 			}
 			else {
@@ -817,6 +818,7 @@ def findMasterDevice() {
 }
 
 def getDeviceThinQVersion(dev) {
+	logger("debug", "getDeviceThinQVersion(${dev})")
 	def thinqDeviceId = dev?.deviceNetworkId?.replace("thinq:", "")
 
 	if (thinqDeviceId) {
@@ -941,6 +943,7 @@ def sendCommand(dev, command, option, key, value) {
 		return resultData
 	}
 	else {
+			 
 		return lgAPIPost("${state.thinqUrl}/service/devices/${thinqDeviceId}/control-sync",
 		[
 			command: command,
@@ -948,6 +951,15 @@ def sendCommand(dev, command, option, key, value) {
 			dataKey: key,
 			dataValue: value
 		])
+				   
+														 
+																						 
+   
+					
+				   
+				
+				   
+		   
 	}
 	return null
 }
@@ -1193,35 +1205,26 @@ def processMqttMessage(dev, payload) {
 }
 
 def findMQTTDataNode(modelInfo, data) {
-	logger("debug", "findMQTTDataNode(${data})")
-	logger("debug", "JB01 ${modelInfo.ControlWifi}")
-	logger("debug", "JB02 ${modelInfo.ControlDevice}")
- 	def key = ""
+	logger("debug", "findMQTTDataNode DATA (${data})")
+	logger("debug", "findMQTTDataNode MODEL(${modelInfo})")
+	def key = ""
 //    if (modelInfo.ControlWifi == null)
     if (modelInfo.containsKey("ControlDevice"))  // AC device
        {
         def ControlDevice = modelInfo.ControlDevice[0]
-        logger("debug", "JB02a ${ControlDevice}")
- 	   key = ControlDevice.keySet()[0]  //NOT USE YET
-       	logger("debug", "JB03a ${ControlDevice.keySet()[0]}")
-       	logger("debug", "JB03b ${key}")  
+		key = ControlDevice.keySet()[0]  //NOT USE YET
         return data
        }
     else
        {def controlWifi = modelInfo.ControlWifi
- 	   key = controlWifi.keySet()[0]
-       logger("debug", "JB04 ${key}")}
+ 	   key = controlWifi.keySet()[0]}
     
-    logger("debug", "JB05 ${controlWifi}")
-    logger("debug", "JB06a ${key}")
-    logger("debug", "JB06b ${controlWifi[key]}")
 	if (modelInfo?.Config?.targetRoot != null) 
      return data."${modelInfo.Config.targetRoot}"
 	else if (controlWifi[key].containsKey("data")) 
     {
 		def wifiData = controlWifi[key].data
 		if (data.containsKey(wifiData.keySet()[0]))
-    logger("debug", "JB09 data.${wifiData.keySet()[0]}")  //data.washerDryer
 			return data."${wifiData.keySet()[0]}"
 	}
 	else if (controlWifi[key].containsKey("dataForm")) {
