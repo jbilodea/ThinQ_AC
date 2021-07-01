@@ -12,7 +12,7 @@ import groovy.json.JsonSlurper
 @Field String DEFAULT_LOG_LEVEL = LOG_LEVELS[2]
 
 metadata {
-    definition(name: "LG ThinQ Washer", namespace: "dcm.thinq", author: "dmeglio@gmail.com") {
+    definition(name: "LG ThinQ Washer", namespace: "jbilodea", author: "dmeglio@gmail.com") {
         capability "Sensor"
         capability "Switch"
         capability "Initialize"
