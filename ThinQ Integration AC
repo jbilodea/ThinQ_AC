@@ -1,10 +1,8 @@
 /**
+/**
  *
  *  LG ThinQ
  *
-											  
-																						   
-  
  *  Copyright 2020 Dominick Meglio
  *
  *	If you find this useful, donations are always appreciated
@@ -23,9 +21,9 @@ import groovy.json.JsonSlurper
 @Field int AUTH_RETRY_MAX = 2
 
 definition(
-	name: "ThinQ Integration AC",
-	namespace: "jbilodea",
-	author: "Jean Bilodeau",
+	name: "ThinQ Integration",
+	namespace: "dcm.thinq",
+	author: "Dominick Meglio",
 	description: "Integrate LG ThinQ smart devices with Hubitat.",
 	category: "My Apps",
 	iconUrl: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience.png",
@@ -335,16 +333,16 @@ def initialize() {
 			case deviceTypeConstants.Dishwasher:
 				driverName = "LG ThinQ Dishwasher"
 				break
-								 
-								
-		 
+			case deviceTypeConstants.HVAC:
+				driverName = "LG ThinQ HVAC"
+				break
 		}
 		if (!hasV1Device)
 			hasV1Device = deviceDetails.version == "thinq1"
 		def childDevice = getChildDevice("thinq:"+deviceDetails.id)
 		if (childDevice == null) {
-			childDevice = addChildDevice("jbilodea", driverName, "thinq:" + deviceDetails.id, 1234, ["name": deviceDetails.name,isComponent: false])
-			if (!findMasterDevice() && deviceDetails.version == "thinq2") {
+			childDevice = addChildDevice("dcm.thinq", driverName, "thinq:" + deviceDetails.id, 1234, ["name": deviceDetails.name,isComponent: false])
+		if (!findMasterDevice() && deviceDetails.version == "thinq2") {   
 				childDevice.updateDataValue("master", "true")
 				childDevice.initialize()
 			}
@@ -355,17 +353,19 @@ def initialize() {
 		
 		if (deviceDetails.version == "thinq1") {
 			childDevice.initialize()
-		}
-		if (deviceDetails.version == "thinq2") {
+		} 
+		if (deviceDetails.version == "thinq2") {  
 			getDeviceSnapshot(deviceDetails, childDevice)
 		}
 	}
 
-	if (hasV1Device)
+	if (hasV1Device) {
 		schedule("0 */1 * * * ? *", refreshV1Devices)
+		}
 }
 
 def getDeviceSnapshot(devDetails, child) {
+
 	def data = lgAPIGet("${state.thinqUrl}/service/devices/${devDetails.id}")
 	log.debug data
 	if (data?.snapshot != null) {
@@ -374,9 +374,7 @@ def getDeviceSnapshot(devDetails, child) {
 		if (targetKeys != null) {
 			for (targetKey in targetKeys) {
 				if (dataNode."${targetKey}" != null)
-				 
 					child.updateDataValue(targetKey, dataNode."${targetKey}")
-				 
 			}
 		}
 		def stateData = decodeMQTTMessage(child, devDetails.modelJson, dataNode)
@@ -533,14 +531,10 @@ def lgAPIPost(uri, body) {
 		) {
 			resp ->
 				if (resp?.data?.resultCode == "0000")
-			 
 					result = resp.data?.result
-			 
 				else
-				 
 					logger("error", "lgAPIPost(${uri}, ${body}) - ${responseCodeText[resp.data.resultCode]}")
 		}
-		 
 		state.auth_retry_cnt = 0
 		logger("trace", "lgAPIPost(${uri}, ${body}) - ${result}")
 		return result
@@ -699,6 +693,15 @@ def loginv1() {
 	}
 }
 
+def isJson(str) {
+    try {
+        JSON.parse(str);
+    } catch (e) {
+        return false;
+    }
+    return true;
+}
+
 def lgEdmPost(url, body, refresh = true) {
 	logger("debug", "lgEdmPost(${url}, ${body}, ${refresh})")
 
@@ -720,13 +723,16 @@ def lgEdmPost(url, body, refresh = true) {
 			"x-thinq-security-key": "nuts_securitykey",
 			"Host": "aic-service.lgthinq.com:46030"
 		]
-	if (state.access_token)
+	if (state.access_token) {
 		headers << ["x-thinq-token": state.access_token]
-	if (state.jsession)
+		}
+	if (state.jsession) {
 		headers << ["x-thinq-jsessionId": state.jsession]
+		}
 
 	try {
-		httpPost([
+	def jsonIndicator = isJson(body)
+		httpPostJson([
 			uri: url,
 			headers: headers,
 			requestContentType: "application/json",
@@ -735,10 +741,9 @@ def lgEdmPost(url, body, refresh = true) {
 			],
 			ignoreSSLIssues: true
 		]) { resp ->
-			logger("trace", "lgEdmPost(${url}) - ${resp?.data}")
-
-			if (resp.data?.lgedmRoot.returnCd == "0000")
+			if (resp.data?.lgedmRoot.returnCd == "0000") {
 				result = resp.data?.lgedmRoot
+				}
 			else if (responseCodeText[resp.data.lgedmRoot.returnCd] == "EMP_AUTHENTICATION_FAILED") {
 				def refreshResult = getAccessToken([refresh_token: state.refresh_token, grant_type: "refresh_token"])
 				if (refreshResult.toString().startsWith("LG.OAUTH.EC")) {
@@ -748,14 +753,16 @@ def lgEdmPost(url, body, refresh = true) {
 				else {
 					state.auth_retry_cnt++
 					state.access_token = refreshResult.access_token
-					if (refreshResult.refresh_token)
+					if (refreshResult.refresh_token) {
 						state.refresh_token = refreshResult.refresh_token
-
+						}
 					loginv1()
-					if (state.access_token != null && refresh & state.auth_retry_cnt < AUTH_RETRY_MAX)
+					if (state.access_token != null && refresh & state.auth_retry_cnt < AUTH_RETRY_MAX) {
 						return lgEdmPost(url, body, false)
-					else
+						}
+					else {
 						state.auth_retry_cnt = 0
+						}
 				}
 			}
 			else {
@@ -777,12 +784,15 @@ def lgEdmPost(url, body, refresh = true) {
 				else {
 					state.auth_retry_cnt++
 					state.access_token = refreshResult.access_token
-					if (refreshResult.refresh_token)
+					if (refreshResult.refresh_token) {
 						state.refresh_token = refreshResult.refresh_token
-					if (state.access_token != null & state.auth_retry_cnt < AUTH_RETRY_MAX)
+						}
+					if (state.access_token != null & state.auth_retry_cnt < AUTH_RETRY_MAX) {
 						return lgEdmPost(url, body)
-					else
+						}
+					else {
 						state.auth_retry_cnt = 0
+						}
 				}
 			}
 			else {
@@ -793,6 +803,7 @@ def lgEdmPost(url, body, refresh = true) {
 	logger("debug", "lgEdmPost(${url}, ${body}, ${refresh}) - ${result}")
 	return result
 }
+
 
 def oauthInitialize() {
 	return "${state.empUrl}/spx/login/signIn?country=${state.countryCode}&language=${state.langCode}&svc_list=SVC202&client_id=LGAO221A02&division=ha&&state=xxx&show_thirdparty_login=GGL,AMZ,FBK&redirect_uri=${URLEncoder.encode("https://kr.m.lgaccount.com/login/iabClose")}"
@@ -927,8 +938,8 @@ private convertSecondsToTime(int sec) {
 
 
 // V1 device methods
-def sendCommand(dev, command, option, key, value) {
-	logger("debug", "sendCommand(${dev}, ${key}, ${value})")
+def sendCommand(dev, command = "", option = "", key = "", value = "") {
+	logger("debug", "sendCommand(${dev}, command ${command}, option ${option}, key ${key}, value ${value})")
 
 	def thinqDeviceId = dev?.deviceNetworkId?.replace("thinq:", "")
 	if (getDeviceThinQVersion(dev) == "thinq1") {
@@ -943,7 +954,6 @@ def sendCommand(dev, command, option, key, value) {
 		return resultData
 	}
 	else {
-			 
 		return lgAPIPost("${state.thinqUrl}/service/devices/${thinqDeviceId}/control-sync",
 		[
 			command: command,
@@ -951,15 +961,6 @@ def sendCommand(dev, command, option, key, value) {
 			dataKey: key,
 			dataValue: value
 		])
-				   
-														 
-																						 
-   
-					
-				   
-				
-				   
-		   
 	}
 	return null
 }
@@ -1020,29 +1021,34 @@ def getRTIData(workList) {
 	}
 	else {
 		def resultWorkList = resultData.workList
-		if (workList.size() == 1)
+		if (workList.size() == 1) {
 			resultWorkList = [resultData.workList]
+			}
 		for (workItem in resultWorkList) {
 			logger("info", "getRTIData(${workList}) - RTI Data: ${workItem}")
 			def deviceId = workItem.deviceId
 			def returnCode = workItem.returnCode
 			def format = workItem.format
 			def data = workItem.returnData?.decodeBase64()
-
 			if (data != null) {
 				def dev = getChildDevice("thinq:" + deviceId)
 				if (dev != null) {
 					modelInfo = state.foundDevices.find { it.id == deviceId }?.modelJson
-
 					if (modelInfo) {
-						if (modelInfo?.Monitoring?.type == "BINARY(BYTE)") {
-							result[deviceId] = decodeBinaryRTIMessage(modelInfo.Monitoring.protocol, modelInfo, data, returnCode)
+						if (modelInfo?.Monitoring?.type == "BINARY(BYTE)" || modelInfo?.Monitoring?.type == "JSON") {
+                            if (modelInfo?.Monitoring?.type == "BINARY(BYTE)") 
+							{
+							   result[deviceId] = decodeBinaryRTIMessage(modelInfo.Monitoring.protocol, modelInfo, data, returnCode)
 							// Check through the output to find any data values that need capturing.
-							for (dataVal in result[deviceId].keySet()) {
+							for (dataVal in result[deviceId].keySet()) 
 								if (thinq2ToV1DataValues[dataVal] != null) {
 									def targetKey = thinq2ToV1DataValues[dataVal]
 									dev.updateDataValue(targetKey.dataValueKey, targetKey.dataValueMappings[result[deviceId][dataVal]])
 								}
+							}
+                            else 
+							{
+							   result[deviceId] = decodeBinaryRTIMsgJSON(data)
 							}
 						}
 						else if (modelInfo?.Monitoring?.type == "THINQ2") {
@@ -1051,7 +1057,7 @@ def getRTIData(workList) {
 						else {
 							// It's already JSON (I think?)
 							result[deviceId] = data
-						}
+					}
 					}
 				}
 			}
@@ -1063,6 +1069,18 @@ def getRTIData(workList) {
 	return result
 }
 
+def decodeBinaryRTIMsgJSON(data) {
+	logger("debug", "decodeBinaryRTIMessageJSON(${data})")
+	def entries = data?.size()  
+	def resultdata = ""
+	for (def i = 0; i < entries; i++) 
+		{
+		resultdata = resultdata + (char) data[i]
+		}
+	return resultdata
+}
+
+	
 def decodeBinaryRTIMessage(protocol, modelInfo, data, returnCode) {
 	logger("debug", "decodeBinaryRTIMessage(${protocol}, modelInfo[FILTERED], ${data}, ${returnCode})")
 
@@ -1136,13 +1154,13 @@ def refreshV1Devices() {
 				workList << ["deviceId": thinqDeviceId, "workId": dev.getDataValue("workId")]
 		}
 	}
-	
 	if (workList.size() > 0) {
 		def rtiData = getRTIData(workList)
 		for (deviceId in rtiData.keySet()) {
 			def childDevice = getChildDevice("thinq:" + deviceId)
-			if (childDevice && rtiData[deviceId] != null)
+			if (childDevice && rtiData[deviceId] != null) {
 				childDevice.processStateData(rtiData[deviceId])
+				}
 		}
 	}
 }
@@ -1207,18 +1225,20 @@ def processMqttMessage(dev, payload) {
 def findMQTTDataNode(modelInfo, data) {
 	logger("debug", "findMQTTDataNode DATA (${data})")
 	logger("debug", "findMQTTDataNode MODEL(${modelInfo})")
-	def key = ""
-//    if (modelInfo.ControlWifi == null)
+    def key = ""
+    def controlWifi = ""
+    
     if (modelInfo.containsKey("ControlDevice"))  // AC device
-       {
-        def ControlDevice = modelInfo.ControlDevice[0]
+       {def ControlDevice = modelInfo.ControlDevice[0]
 		key = ControlDevice.keySet()[0]  //NOT USE YET
         return data
        }
     else
-       {def controlWifi = modelInfo.ControlWifi
- 	   key = controlWifi.keySet()[0]}
-    
+       {controlWifi = modelInfo.ControlWifi
+ 	   key = controlWifi.keySet()[0]
+       }
+    logger("debug", "findMQTTDataNode KEY4")    
+    logger("debug", "findMQTTDataNode KEY5 (${controlWifi[key].containsKey("data")})")    
 	if (modelInfo?.Config?.targetRoot != null) 
      return data."${modelInfo.Config.targetRoot}"
 	else if (controlWifi[key].containsKey("data")) 
@@ -1341,8 +1361,9 @@ def cleanupChildDevices() {
 			}
 		}
 
-		if (deviceFound == true)
+		if (deviceFound == true){
 			continue
+            }
 
 		deleteChildDevice(d.deviceNetworkId)
 	}
