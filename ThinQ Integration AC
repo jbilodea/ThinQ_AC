@@ -1,5 +1,4 @@
 /**
-/**
  *
  *  LG ThinQ
  *
@@ -1381,7 +1380,23 @@ def generateKeyAndCSR() {
 	}
 }
 
+def getCmdKeys(pdevice, pcmd) {
 
+    def pcmdList = new JsonSlurper().parseText(pcmd)
+    if (getDeviceThinQVersion(pdevice) == "thinq1")
+		return [pcmdList[0].getAt(0), pcmdList[1], pcmdList[2].getAt(0)] 
+    else
+		return [pcmdList[1], pcmdList[0].getAt(1), pcmdList[2].getAt(1)] 
+}	
+		
+def getStateKey	(pdevice, pcmd) {
+    def pcmdList = new JsonSlurper().parseText(pcmd)
+	if (getDeviceThinQVersion(pdevice) == "thinq1")
+		return pcmdList[0]
+	else
+		return pcmdList[1]
+}	
+		
 /**
 * @param level Level to log at, see LOG_LEVELS for options
 * @param msg Message to log
