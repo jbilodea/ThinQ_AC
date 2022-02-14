@@ -1,4 +1,6 @@
 /**
+/**
+/**
  *  LG HVAC
  *
  *  Copyright 2020 Dominick Meglio
@@ -11,6 +13,191 @@ import groovy.json.JsonSlurper
 @Field List<String> LOG_LEVELS = ["error", "warn", "info", "debug", "trace"]
 @Field String DEFAULT_LOG_LEVEL = LOG_LEVELS[2]
 
+@Field String acCtrlBasic 			= ['"Control"', '"basicCtrl"']
+@Field String acCtrlWindDirection 	= ['"Control"', '"wDirCtrl"']
+
+@Field String acStateOperation	 	= ['"Operation"', 	  '"airState.operation"']
+@Field String acStateOperationMode 	= ['"OpMode"', 		  '"airState.opMode"']
+@Field String acStateCurrentTemp	= ['"TempCur"', 		  '"airState.tempState.current"']
+@Field String acStateTargetTemp 	= ['"TempCfg"', 		  '"airState.tempState.target"']
+@Field String acStateWindStrength 	= ['"WindStrength"',   '"airState.windStrength"']
+@Field String acStateWDirHStep 		= ['"WDirHStep"', 	  '"airState.wDir.hStep"']
+@Field String acStateWDirVStep 		= ['"WDirVStep"', 	  '"airState.wDir.vStep"']
+@Field String acStateWDirHSwing 	= ['"WDirLeftRight"',  '"airState.wDir.leftRight"']
+@Field String acStateWDirVSwing 	= ['"WDirUpDown"', 	  '"airState.wDir.upDown"']
+@Field String acTimeToStart		 	= ['"OnTime"', 		  '"airState.reservation.targetTimeToStart"']
+@Field String acTimeToStop		 	= ['"OffTime"', 		  '"airState.reservation.targetTimeToStop"']
+@Field String acDiagCode		 	= ['"DiagCode"', 	  '"airState.diagCode"']
+@Field String acSensorMon		 	= ['"SensorMon"',      '"airState.quality.sensorMon"']
+@Field String acSleepTime		 	= ['"SleepTime"',      '"airState.reservation.sleepTime"']
+@Field String acDisplayControl	 	= ['"DisplayControl"', '"airState.lightingState.displayControl"']
+
+@Field String cmdStateOperation 	= [acCtrlBasic, 		'"Set"', acStateOperation]
+@Field String cmdStateOpMode 		= [acCtrlBasic, 		'"Set"', acStateOperationMode]
+@Field String cmdStateTargetTemp	= [acCtrlBasic, 		'"Set"', acStateTargetTemp]
+@Field String cmdStateWindStrength 	= [acCtrlBasic, 		'"Set"', acStateWindStrength]
+@Field String cmdStateWDirHStep 	= [acCtrlWindDirection, '"Set"', acStateWDirHStep]
+@Field String cmdStateWDirVStep 	= [acCtrlWindDirection, '"Set"', acStateWDirVStep]
+@Field String cmdStateWDirHSwing	= [acCtrlWindDirection, '"Set"', acStateWDirHSwing]
+@Field String cmdStateWDirVSwing	= [acCtrlWindDirection, '"Set"', acStateWDirVSwing]
+@Field String cmdTimeToStart		= [acCtrlBasic, 		'"Set"', acTimeToStart]
+@Field String cmdTimeToStop			= [acCtrlBasic, 		'"Set"', acTimeToStop]
+// To test
+@Field String cmdlightingDisplay	= [acCtrlBasic, 		'"Set"', acDisplayControl]
+@Field String cmdSleepTime			= [acCtrlBasic, 		'"Set"', acSleepTime]
+
+@Field String opModeStr = '{"Cool": 0,'+
+						   '"Dry": 1,'+
+						   '"Fan": 2,'+
+						   '"AI": 3,'+
+						   '"Heat": 4,'+
+						   '"Airclean": 5,'+
+						   '"Aco": 6,'+
+						   '"Aroma": 7,'+
+						   '"Energy_saving": 8,'+
+						   '"Cleaning": 9,'+
+						   '"Sleeping": 10,'+
+						   '"Silent": 11,'+
+						   '"Humidity": 12,'+
+						   '"Circulator_clean": 13,'+
+						   '"Baby_care": 14,'+
+						   '"Dual_clean": 15,'+
+						   '"Auto": 16,'+
+						   '"Smart_dehum": 17,'+
+						   '"Fast_dehum": 18,'+
+						   '"Cilent_dehum": 19,'+
+						   '"Concentration_dry": 20,'+
+						   '"Clothing_dry": 21,'+
+						   '"Ionizer": 22,'+
+						   '"Antibugs": 23,'+
+						   '"Airclean": 32}'
+
+@Field String HSwingStr	 = '{"Off": 0,'+
+							'"On": 1,'+
+							'"Right_On": 2,'+
+							'"Left_On": 256,'+
+							'"All_On": 257}'
+
+@Field String VSwingStr	 = '{"Off": 0,'+
+							'"On": 1}'
+
+@Field String lightingDisplayStr	= '{"RAC Led On": 0,'+
+									    '"RAC Led Off": 1,'+
+										'"AC_Led_Off": 11,'+
+										'"AC_Led_On": 12,'+
+										'"AC_Led_Auto": 13}'
+
+@Field String operationStr =  '{"@AC_MAIN_OPERATION_OFF_W": 0,'+
+							  '"@AC_MAIN_OPERATION_ALL_ON_W": 257}'
+
+@Field String windStrengthStr = '{"slow_low": 1,'+
+								  '"low": 2,'+
+								  '"low_mid": 3,'+
+								  '"mid": 4,'+
+								  '"mid_high": 5,'+
+								  '"high": 6,'+
+								  '"power": 7,'+
+								  '"nature": 8,'+
+								  '"longpower": 9,'+
+								  '"shower": 10,'+
+								  '"forest": 11,'+
+								  '"ac_main_wind_smartcare": 12,'+
+								  '"ap_main_wind_strength_fastwind": 13,'+
+								  '"slo": 0,'+
+								  '"slow_low_left_w|slow_right": 256,'+
+								  '"slow_low_left_w|slow_low_right": 257,'+
+								  '"slow_low_left_w|low_right": 258,'+
+								  '"slow_low_left_w|low_mid_right": 259,'+
+								  '"slow_low_left_w|mid_right": 260,'+
+								  '"slow_low_left_w|mid_high_right": 261,'+
+								  '"slow_low_left_w|high_right": 262,'+
+								  '"slow_low_left_w|power_right": 263,'+
+								  '"slow_low_left_w|auto_right": 264,'+
+								  '"low_left_w|slow_right": 512,'+
+								  '"low_left_w|slow_low_right": 513,'+
+								  '"low_left_w|low_right": 514,'+
+								  '"low_left_w|low_mid_right": 515,'+
+								  '"low_left_w|mid_right": 516,'+
+								  '"low_left_w|mid_high_right": 517,'+
+								  '"low_left_w|high_right": 518,'+
+								  '"low_left_w|power_right": 519,'+
+								  '"low_left_w|auto_right": 520,'+
+								  '"low_left": 767,'+
+								  '"low_mid_left_w|slow_right": 768,'+
+								  '"low_mid_left_w|slow_low_right": 769,'+
+								  '"low_mid_left_w|low_right": 770,'+
+								  '"low_mid_left_w|low_mid_right": 771,'+
+								  '"low_mid_left_w|mid_right": 772,'+
+								  '"low_mid_left_w|mid_high_right": 773,'+
+								  '"low_mid_left_w|high_right": 774,'+
+								  '"low_mid_left_w|power_right": 775,'+
+								  '"low_mid_left_w|auto_right": 776,'+
+								  '"low_mid_left": 1023,'+
+								  '"mid_left_w|slow_right": 1024,'+
+								  '"mid_left_w|slow_low_right": 1025,'+
+								  '"mid_left_w|low_right": 1026,'+
+								  '"mid_left_w|low_mid_right": 1027,'+
+								  '"mid_left_w|mid_right": 1028,'+
+								  '"mid_left_w|mid_high_right": 1029,'+
+								  '"mid_left_w|high_right": 1030,'+
+								  '"mid_left_w|power_right": 1031,'+
+								  '"mid_left_w|auto_right": 1032,'+
+								  '"mid_left": 1279,'+
+								  '"mid_high_left_w|slow_right": 1280,'+
+								  '"mid_high_left_w|slow_low_right": 1281,'+
+								  '"mid_high_left_w|low_right": 1282,'+
+								  '"mid_high_left_w|low_mid_right": 1283,'+
+								  '"mid_high_left_w|mid_right": 1284,'+
+								  '"mid_high_left_w|mid_high_right": 1285,'+
+								  '"mid_high_left_w|high_right": 1286,'+
+								  '"mid_high_left_w|power_right": 1287,'+
+								  '"mid_high_left_w|auto_right": 1288,'+
+								  '"mid_high_left": 1535,'+
+								  '"high_left_w|slow_right": 1536,'+
+								  '"high_left_w|slow_low_right": 1537,'+
+								  '"high_left_w|low_right": 1538,'+
+								  '"high_left_w|low_mid_right": 1539,'+
+								  '"high_left_w|mid_right": 1540,'+
+								  '"high_left_w|mid_high_right": 1541,'+
+								  '"high_left_w|high_right": 1542,'+
+								  '"high_left_w|power_right": 1543,'+
+								  '"high_left_w|auto_right": 1544,'+
+								  '"high_left": 1791,'+
+								  '"power_left_w|slow_right": 1792,'+
+								  '"power_left_w|slow_low_right": 1793,'+
+								  '"power_left_w|low_right": 1794,'+
+								  '"power_left_w|low_mid_right": 1795,'+
+								  '"power_left_w|mid_right": 1796,'+
+								  '"power_left_w|mid_high_right": 1797,'+
+								  '"power_left_w|high_righ": 1798,'+
+								  '"power_left_w|power_right": 1799,'+
+								  '"power_left_w|auto_right": 1800,'+
+								  '"power_left": 2047,'+
+								  '"auto_left_w|slow_right": 2048,'+
+								  '"auto_left_w|slow_low_right": 2049,'+
+								  '"auto_left_w|low_right": 2050,'+
+								  '"auto_left_w|low_mid_right": 2051,'+
+								  '"auto_left_w|mid_right": 2052,'+
+								  '"auto_left_w|mid_high_right": 2053,'+
+								  '"auto_left_w|high_right": 2054,'+
+								  '"auto_left_w|power_right": 2055,'+
+								  '"auto_left_w|auto_right": 2056,'+
+								  '"auto_left": 2303,'+
+								  '"slow_low_left": 511,'+
+								  '"longpower_left_w|longpower_right": 2313,'+
+								  '"shower_left_w|shower_right": 2570,'+
+								  '"forest_left_w|forest_right": 2827,'+
+								  '"turbo_left_w|turbo_right": 3084,'+
+								  '"slow_right": 65280,'+
+								  '"slow_low_right": 65281,'+
+								  '"low_right": 65282,'+
+								  '"low_mid_right": 65283,'+
+								  '"mid_right": 65284,'+
+								  '"mid_high_right": 65285,'+
+								  '"high_right": 65286,'+
+								  '"power_right": 65287,'+
+								  '"auto_rig": 65288}'
+
 metadata {
     definition(name: "LG ThinQ HVAC", namespace: "dcm.thinq", author: "Jean Bilodeau") {
         capability "Sensor"
@@ -18,10 +205,13 @@ metadata {
         capability "Initialize"
 
         attribute "diagCode", "number"
-        attribute "dirStep", "number"
+        attribute "HdirStep", "number"
+        attribute "VdirStep", "number"
+        attribute "HSwing", "number"
+        attribute "VSwing", "number"
         attribute "lightingDisplay", "number"
         attribute "operation", "number"
-        attribute "opMode", "number"
+        attribute "opMode", "string"
         attribute "powerSaveBasic", "number"
         attribute "qualitySensorMon", "number"
         attribute "sleepTime", "number"
@@ -29,14 +219,162 @@ metadata {
         attribute "targetTimeToStop", "number"
         attribute "tempCurrent", "number"
         attribute "tempTarget", "number"
-        attribute "windStrength", "number"
+        attribute "windStrength", "string"
 
-        command "dirStep",            [[name: "dirStep",type:"NUMBER", description: "dirStep, Wind direction (Left Right, Up Down), possible values at https://github.com/jbilodea/ThinQ_AC/blob/main/DirStep"]]
+        command "SleepTime", 		    [[name: "SleepTime",type:"NUMBER", description: "SleepTime, From 0 to 1440"]]
+        command "lightingDisplay",		[[name: "lightingDisplay",type:"ENUM", description: "lightingDisplay", constraints: ["RAC Led On",
+																															 "RAC Led Off",
+																															 "AC_Led_Off",
+																															 "AC_Led_On",
+																															 "AC_Led_Auto"]]]
+        command "HdirStep",            [[name: "HdirStep",type:"NUMBER", description: "Horizontal Wind direction (Up Down)"+
+										" = 0:Off, 1, 2, 3, 4, 5, 6, 13, 16, 32, 35, 48, 64, 80, 96, 100, 101, 102, 103, 104, 256, 512, 768, 1024, 1080, 1536, 4096, 8192, 12288, 16384, 20480, 24576, 65536"]]
+        command "VdirStep",            [[name: "VdirStep",type:"NUMBER", description: "VdirStep, Vertical Wind direction (Left Right)"+
+										" = 0:Off, 1, 2, 3, 4, 5, 6, 13, 16, 32, 35, 48, 64, 80, 96, 100, 101, 102, 103, 104, 256, 512, 768, 1024, 1080, 1536, 4096, 8192, 12288, 16384, 20480, 24576, 65536"]]
+        command "HSwing",              [[name: "HSwing",type:"ENUM", description: "Horizontal Swing (Left Right)", constraints: ["Off",
+																																 "On",
+																																 "Right_On",
+																																 "Left_On",
+																																 "All_On"]]]
+        command "VSwing",              [[name: "VSwing",type:"ENUM", description: "Vertical Swing (Up Down)", constraints: ["Off",
+																															"On"]]]
         command "decreaseTarget" //,     [[name: "decreaseTarget",type:"NUMBER", description: "Decrease target temperature"]]
         command "increaseTarget" //,     [[name: "increaseTarget",type:"NUMBER", description: "Increase target temperature"]]
-        command "opMode",             [[name: "opMode",type:"NUMBER", description: "opMode (Cool, Fan,...) , possible values at https://github.com/jbilodea/ThinQ_AC/blob/main/opMode"]]
+        command "opMode",             [[name: "opMode",type:"ENUM", description: "opMode (Cool, Heat, Fan,...)", constraints: ["Cool", 
+																															   "Dry", 
+																															   "Fan", 
+																															   "AI", 
+																															   "Heat", 
+																															   "Airclean", 
+																															   "Aco", 
+																															   "Aroma", 
+																															   "Energy_saving", 
+																															   "Cleaning", 
+																															   "Sleeping", 
+																															   "Silent", 
+																															   "Humidity", 
+																															   "Circulator_clean", 
+																															   "Baby_care", 
+																															   "Dual_clean", 
+																															   "Auto", 
+																															   "Smart_dehum", 
+																															   "Fast_dehum", 
+																															   "Cilent_dehum", 
+																															   "Concentration_dry", 
+																															   "Clothing_dry",
+																															   "Ionizer", 
+																															   "Antibugs", 
+																															   "Airclean"]]]
         command "temperatureTarget",  [[name: "temperatureTarget",type:"NUMBER", description: "Target temperature"]]
-        command "windStrength",       [[name: "windStrength",type:"NUMBER", description: "Wind Strength, possible values at https://github.com/jbilodea/ThinQ_AC/blob/main/windStrengthValues"]]
+        command "windStrength",       [[name: "windStrength",type:"ENUM", description: "Wind Strength", constraints: ["slow_low",
+																													  "low",
+																													  "low_mid",
+																													  "mid",
+																													  "mid_high",
+																													  "high",
+																													  "power",
+																													  "nature",
+																													  "longpower",
+																													  "shower",
+																													  "forest",
+																													  "ac_main_wind_smartcare",
+																													  "ap_main_wind_strength_fastwind_w", 
+																													  "slo",
+																													  "slow_low_left_w|slow_right",
+																													  "slow_low_left_w|slow_low_right",
+																													  "slow_low_left_w|low_right",
+																													  "slow_low_left_w|low_mid_right",
+																													  "slow_low_left_w|mid_right",
+																													  "slow_low_left_w|mid_high_right",
+																													  "slow_low_left_w|high_right",
+																													  "slow_low_left_w|power_right",
+																													  "slow_low_left_w|auto_right",
+																													  "low_left_w|slow_right",
+																													  "low_left_w|slow_low_right",
+																													  "low_left_w|low_right",
+																													  "low_left_w|low_mid_right",
+																													  "low_left_w|mid_right",
+																													  "low_left_w|mid_high_right",
+																													  "low_left_w|high_right",
+																													  "low_left_w|power_right",
+																													  "low_left_w|auto_right",
+																													  "low_left",
+																													  "low_mid_left_w|slow_right",
+																													  "low_mid_left_w|slow_low_right",
+																													  "low_mid_left_w|low_right",
+																													  "low_mid_left_w|low_mid_right",
+																													  "low_mid_left_w|mid_right",
+																													  "low_mid_left_w|mid_high_right",
+																													  "low_mid_left_w|high_right",
+																													  "low_mid_left_w|power_right",
+																													  "low_mid_left_w|auto_right",
+																													  "low_mid_left",
+																													  "mid_left_w|slow_right",
+																													  "mid_left_w|slow_low_right",
+																													  "mid_left_w|low_right",
+																													  "mid_left_w|low_mid_right",
+																													  "mid_left_w|mid_right",
+																													  "mid_left_w|mid_high_right",
+																													  "mid_left_w|high_right",
+																													  "mid_left_w|power_right",
+																													  "mid_left_w|auto_right",
+																													  "mid_left",
+																													  "mid_high_left_w|slow_right",
+																													  "mid_high_left_w|slow_low_right",
+																													  "mid_high_left_w|low_right",
+																													  "mid_high_left_w|low_mid_right",
+																													  "mid_high_left_w|mid_right",
+																													  "mid_high_left_w|mid_high_right",
+																													  "mid_high_left_w|high_right",
+																													  "mid_high_left_w|power_right",
+																													  "mid_high_left_w|auto_right",
+																													  "mid_high_left",
+																													  "high_left_w|slow_right",
+																													  "high_left_w|slow_low_right",
+																													  "high_left_w|low_right",
+																													  "high_left_w|low_mid_right",
+																													  "high_left_w|mid_right",
+																													  "high_left_w|mid_high_right",
+																													  "high_left_w|high_right",
+																													  "high_left_w|power_right",
+																													  "high_left_w|auto_right",
+																													  "high_left",
+																													  "power_left_w|slow_right",
+																													  "power_left_w|slow_low_right",
+																													  "power_left_w|low_right",
+																													  "power_left_w|low_mid_right",
+																													  "power_left_w|mid_right",
+																													  "power_left_w|mid_high_right",
+																													  "power_left_w|high_righ",
+																													  "power_left_w|power_right",
+																													  "power_left_w|auto_right",
+																													  "power_left",
+																													  "auto_left_w|slow_right",
+																													  "auto_left_w|slow_low_right",
+																													  "auto_left_w|low_right",
+																													  "auto_left_w|low_mid_right",
+																													  "auto_left_w|mid_right",
+																													  "auto_left_w|mid_high_right",
+																													  "auto_left_w|high_right",
+																													  "auto_left_w|power_right",
+																													  "auto_left_w|auto_right",
+																													  "auto_left_w", 
+																													  "slow_low_left",
+																													  "longpower_left_w|longpower_right",
+																													  "shower_left_w|shower_right",
+																													  "forest_left_w|forest_right",
+																													  "turbo_left_w|turbo_right",
+																													  "slow_right",
+																													  "slow_low_right",
+																													  "low_right",
+																													  "low_mid_right",
+																													  "mid_right",
+																													  "mid_high_right",
+																													  "high_right",
+																													  "power_right",
+																													  "auto_rig"]]]
+
+		
         command "targetTimeToStart",  [[name: "targetTimeToStart",type:"NUMBER", description: "From 0 to 1440 minutes"]]
         command "targetTimeToStop",   [[name: "targetTimeToStop",type:"NUMBER", description: "From 0 to 1440 minutes"]]   
     }
@@ -58,7 +396,6 @@ def initialize() {
     logger("debug", "initialize()")
 
     if (getDataValue("master") == "true") {
-    logger("debug2", "MASTER")
         if (interfaces.mqtt.isConnected())
             interfaces.mqtt.disconnect()
 
@@ -69,29 +406,26 @@ def initialize() {
 }
 
 def on() {
-	if (parent.getDeviceThinQVersion(device) == "thinq1") {
-//									dev, 	 command,       option, key, 		value
-        result = parent.sendCommand(device, "Control", "Set", "Operation", "257")		
-		}
-	else {
-    //                                  	command, ctrlKey,     dataKey,             dataValue
-        result = parent.sendCommand(device, "Set",  "basicCtrl", "airState.operation", 1)
-		}
 
+	def slurper = new groovy.json.JsonSlurper()
+	def operationJson = slurper.parseText(operationStr)
+	def operationValue = operationJson["@AC_MAIN_OPERATION_ALL_ON_W"]
+
+	def keys = parent.getCmdKeys(device, cmdStateOperation)
+    result = parent.sendCommand(device, keys[0], keys[1], keys[2], operationValue)		
     sendEvent(name: "opMode", value: 1, displayed: false)   
     currentStateSwitch = "on"
     sendEvent(name: "switch", value: currentStateSwitch, descriptionText: "Was turned ${currentStateSwitch}")    
 }
 
 def off() {
-   
-	if (parent.getDeviceThinQVersion(device) == "thinq1") {
-        result = parent.sendCommand(device, "Control", "Set", "Operation", "0")	
-		}
-	else 
-    //                                  command, ctrlKey,     dataKey,             dataValue
-        result = parent.sendCommand(device, "Set",  "basicCtrl", "airState.operation", 0)
 
+	def slurper = new groovy.json.JsonSlurper()
+	def operationJson = slurper.parseText(operationStr)
+	def operationValue = operationJson["@AC_MAIN_OPERATION_OFF_W"]
+
+	def keys = parent.getCmdKeys(device, cmdStateOperation)
+    result = parent.sendCommand(device, keys[0], keys[1], keys[2], operationValue)		   
     sendEvent(name: "opMode", value: 0, displayed: false)    
     currentStateSwitch = "off"
     sendEvent(name: "switch", value: currentStateSwitch, descriptionText: "Was turned ${currentStateSwitch}")
@@ -99,13 +433,10 @@ def off() {
 
 def decreaseTarget() {
 
-    def nextTarget =  device.currentValue("tempTarget") - 1
+    def nextTarget =  device.currentValue("tempTarget") - 1	
 
-	if (parent.getDeviceThinQVersion(device) == "thinq1")
-		result = parent.sendCommand(device, "Control", "Set", "TempCfg", nextTarget)	   
-	else
-		result = parent.sendCommand(device, "Set",  "basicCtrl", "airState.tempState.target", nextTarget)
-
+	def keys = parent.getCmdKeys(device, cmdStateTargetTemp)
+    result = parent.sendCommand(device, keys[0], keys[1], keys[2], nextTarget)		<
 	sendEvent(name: "tempTarget", value: nextTarget, displayed: false)
 }
 
@@ -113,77 +444,123 @@ def increaseTarget() {
 
     def nextTarget =  device.currentValue("tempTarget") + 1
 
-	if (parent.getDeviceThinQVersion(device) == "thinq1") 
-		result = parent.sendCommand(device, "Control", "Set", "TempCfg", nextTarget)	   
-	else
-		result = parent.sendCommand(device, "Set",  "basicCtrl", "airState.tempState.target", nextTarget)
-
+	def keys = parent.getCmdKeys(device, cmdStateTargetTemp)
+    result = parent.sendCommand(device, keys[0], keys[1], keys[2], nextTarget)		
     sendEvent(name: "tempTarget", value: nextTarget, displayed: false)
 }
 
 def temperatureTarget(ptemperatureTarget) {
    
     if (ptemperatureTarget != null) {
-		if (parent.getDeviceThinQVersion(device) == "thinq1") 
-			result = parent.sendCommand(device, "Control", "Set", "TempCfg", ptemperatureTarget)	
-		else 
-			result = parent.sendCommand(device, "Set",  "basicCtrl", "airState.tempState.target", ptemperatureTarget)
+		def keys = parent.getCmdKeys(device, cmdStateTargetTemp)
+		result = parent.sendCommand(device, keys[0], keys[1], keys[2], ptemperatureTarget)		
+    	sendEvent(name: "tempTarget", value: ptemperatureTarget, displayed: false)
 	}
-	sendEvent(name: "tempTarget", value: ptemperatureTarget, displayed: false)
 }
 
 def targetTimeToStart(ptargetTimeToStart) {
    
     if (ptargetTimeToStart != null) {
-		if (parent.getDeviceThinQVersion(device) == "thinq1") 
-			result = parent.sendCommand(device, "Control", "Set", "OnTime", ptargetTimeToStart)	
-		else
-			result = parent.sendCommand(device, "Set",  "basicCtrl", "airState.reservation.targetTimeToStart", ptargetTimeToStart)
+		def keys = parent.getCmdKeys(device, cmdTimeToStart)
+		result = parent.sendCommand(device, keys[0], keys[1], keys[2], ptargetTimeToStart)		
         sendEvent(name: "targetTimeToStart", value: ptemperatureTarget, displayed: false)
+        }
+}
+
+def SleepTime(pcmdSleepTime) {
+   
+    if (pcmdSleepTime != null) {
+		def keys = parent.getCmdKeys(device, cmdSleepTime)
+		result = parent.sendCommand(device, keys[0], keys[1], keys[2], pcmdSleepTime)		
+        sendEvent(name: "cmdSleepTime", value: pcmdSleepTime, displayed: false)            
         }
 }
 
 def targetTimeToStop(ptargetTimeToStop) {
    
     if (ptargetTimeToStop != null) {
-		if (parent.getDeviceThinQVersion(device) == "thinq1") 
-			result = parent.sendCommand(device, "Control", "Set", "OffTime", ptargetTimeToStart)	
-		else
-			result = parent.sendCommand(device, "Set",  "basicCtrl", "airState.reservation.targetTimeToStop", ptargetTimeToStop)
+		def keys = parent.getCmdKeys(device, cmdTimeToStop)
+		result = parent.sendCommand(device, keys[0], keys[1], keys[2], ptargetTimeToStop)		
         sendEvent(name: "targetTimeToStop", value: ptargetTimeToStop, displayed: false)            
         }
 }
 
-def dirStep(pdirStep) {
+def lightingDisplay(plightingDisplay) {
+    if (plightingDisplay != null) {
+		def slurper = new groovy.json.JsonSlurper()
+		def opModeJson = slurper.parseText(lightingDisplayStr)
+		def opModeValue = opModeJson[plightingDisplay]
+
+		def keys = parent.getCmdKeys(device, cmdlightingDisplay)
+		result = parent.sendCommand(device, keys[0], keys[1], keys[2], opModeValue)		
+        sendEvent(name: "lightingDisplay", value: opModeValue, displayed: false)
+        }
+}
+
+def HdirStep(pHdirStep) {
    
-    if (pdirStep != null) {
-		if (parent.getDeviceThinQVersion(device) == "thinq1") 
-			result = parent.sendCommand(device, "Control", "Set", "WDirVStep", pdirStep)	
-		else
-			result = parent.sendCommand(device, "Set",  "wDirCtrl", "airState.wDir.hStep", pdirStep)
-        sendEvent(name: "dirStep", value: pdirStep, displayed: false)            
+    if (pHdirStep != null) {
+		def keys = parent.getCmdKeys(device, cmdStateWDirHStep)
+		result = parent.sendCommand(device, keys[0], keys[1], keys[2], pHdirStep)		
+        sendEvent(name: "HdirStep", value: pHdirStep, displayed: false)            
+        }
+}
+
+def VdirStep(pVdirStep) {
+   
+    if (pVdirStep != null) {
+		def keys = parent.getCmdKeys(device, cmdStateWDirVStep)
+		result = parent.sendCommand(device, keys[0], keys[1], keys[2], pVdirStep)		
+        sendEvent(name: "VdirStep", value: pVdirStep, displayed: false)            
+        }
+}
+
+def HSwing(pHSwing) {
+    if (pHSwing != null) {
+		def slurper = new groovy.json.JsonSlurper()
+		def opModeJson = slurper.parseText(HSwingStr)
+		def opModeValue = opModeJson[pHSwing]
+
+		def keys = parent.getCmdKeys(device, cmdStateWDirHSwing)
+        result = parent.sendCommand(device, keys[0], keys[1], keys[2], opModeValue)		
+        sendEvent(name: "HSwing", value: opModeValue, displayed: false)
+        }
+}
+
+def VSwing(pVSwing) {
+    if (pVSwing != null) {
+		def slurper = new groovy.json.JsonSlurper()
+		def opModeJson = slurper.parseText(VSwingStr)
+		def opModeValue = opModeJson[pVSwing]
+
+		def keys = parent.getCmdKeys(device, cmdStateWDirVSwing)
+		result = parent.sendCommand(device, keys[0], keys[1], keys[2], opModeValue)		
+        sendEvent(name: "VSwing", value: opModeValue, displayed: false)
         }
 }
 
 def opMode(popMode) {
    
     if (popMode != null) {
-		if (parent.getDeviceThinQVersion(device) == "thinq1") 
-			result = parent.sendCommand(device, "Control", "Set", "opMode", popMode)	
-		else
-			result = parent.sendCommand(device, "Set",  "basicCtrl", "airState.opMode", popMode)
-        sendEvent(name: "opMode", value: popMode, displayed: false)
+		def slurper = new groovy.json.JsonSlurper()
+		def opModeJson = slurper.parseText(opModeStr)
+		def opModeValue = opModeJson[popMode]
+
+		def keys = parent.getCmdKeys(device, cmdStateOpMode)
+		result = parent.sendCommand(device, keys[0], keys[1], keys[2], opModeValue)		
+        sendEvent(name: "opMode", value: opModeValue, displayed: false)
         }
 }
 
 def windStrength(pwindStrength) {
-   
     if (pwindStrength != null) {
-		if (parent.getDeviceThinQVersion(device) == "thinq1") 
-			result = parent.sendCommand(device, "Control", "Set", "WindStrength", pwindStrength)	
-		else
-			result = parent.sendCommand(device, "Set",  "basicCtrl", "airState.windStrength", pwindStrength)
-        sendEvent(name: "windStrength", value: pwindStrength, displayed: false)
+		def slurper = new groovy.json.JsonSlurper()
+		def opModeJson = slurper.parseText(windStrengthStr)
+		def opModeValue = opModeJson[pwindStrength]
+
+		def keys = parent.getCmdKeys(device, cmdStateWindStrength)
+		result = parent.sendCommand(device, keys[0], keys[1], keys[2], opModeValue)		
+        sendEvent(name: "windStrength", value: opModeValue, displayed: false)
         }
 }
 
@@ -241,71 +618,71 @@ def mqttClientStatus(String message) {
     }
 }
 
-def processStateData(data) {
-    
+def processStateData(data) {    
     logger("debug", "processStateData1(${data})")
-	if (parent.getDeviceThinQVersion(device) == "thinq1") {
-data = new JsonSlurper().parseText(data)   
-logger("debug", "processStateData2(${data})")
-       if (parent.checkValue(data, "DiagCode")){
-           sendEvent(name: "diagCode", value: data["DiagCode"], displayed: false)}
-       if (parent.checkValue(data, "Operation"))
-           {
-           sendEvent(name: "operation", value: data["Operation"], displayed: false)
-           if (data["Operation"] == 1)
-            currentStateSwitch = "on"
-           else
-            currentStateSwitch = "off"
-           sendEvent(name: "switch", value: currentStateSwitch, descriptionText: "Was turned ${currentStateSwitch}")
-           }
-       if (parent.checkValue(data, "opMode")){
-           sendEvent(name: "opMode", value: data["opMode"], displayed: false)}
-       if (parent.checkValue(data, "SensorMon")){
-           sendEvent(name: "qualitySensorMon", value: data["SensorMon"], displayed: false)}
-       if (parent.checkValue(data, "SleepTime")){
-           sendEvent(name: "sleepTime", value: data["SleepTime"], displayed: false)}
-       if (parent.checkValue(data, "TempCur")){
-   		sendEvent(name: "tempCurrent", value: data["TempCur"], displayed: false)}
-       if (parent.checkValue(data, "TempCfg")){
-           sendEvent(name: "tempTarget", value: data["TempCfg"], displayed: false)}
-       if (parent.checkValue(data, "WindStrength")) {
-           sendEvent(name: "windStrength", value: data["WindStrength"], displayed: false)}      
-		}
-	else {
+	if (parent.getDeviceThinQVersion(device) == "thinq1")
+		data = new JsonSlurper().parseText(data)   
 
-		if (parent.checkValue(data, "airState.diagCode")){
-			sendEvent(name: "diagCode", value: data["airState.diagCode"], displayed: false)}
-		if (parent.checkValue(data,'airState.wDir.hStep')) {
-			sendEvent(name: "DirStep", value: data["airState.wDir.hStep"], displayed: false)}
-		if (parent.checkValue(data, "airState.lightingState.displayControl")){
-			sendEvent(name: "lightingDisplay", value: data["airState.lightingState.displayControl"], displayed: false)}
-		if (parent.checkValue(data, "airState.operation"))
-			{
-			sendEvent(name: "operation", value: data["airState.operation"], displayed: false)
-			if (data["airState.operation"] == 1)
+	prepareCmd("HSwing", data, acStateWDirHSwing, HSwingStr)		
+	prepareCmd("VSwing", data, acStateWDirVSwing, VSwingStr)		
+	prepareCmd("opMode", data, acStateOperationMode, opModeStr)		
+	prepareCmd("windStrength", data, acStateWindStrength, windStrengthStr)		
+	prepareCmd("lightingDisplay", data, acDisplayControl, lightingDisplayStr)		
+	def String key = parent.getStateKey(device, acDiagCode)
+    if (parent.checkValue(data, key))
+		sendEvent(name: "diagCode", value: data[key], displayed: false)
+    key = parent.getStateKey(device, acStateWDirHStep)
+	if (parent.checkValue(data,key))
+		sendEvent(name: "HdirStep", value: data[key], displayed: false)
+	key = parent.getStateKey(device, acStateWDirVStep)
+	if (parent.checkValue(data,key))
+	sendEvent(name: "VdirStep", value: data[key], displayed: false)
+	key = parent.getStateKey(device, acSensorMon)
+	if (parent.checkValue(data, key))
+		sendEvent(name: "qualitySensorMon", value: data[key], displayed: false)
+	key = parent.getStateKey(device, acSleepTime)
+	if (parent.checkValue(data, key))
+		sendEvent(name: "sleepTime", value: data[key], displayed: false)
+	key = parent.getStateKey(device, acStateCurrentTemp)
+	if (parent.checkValue(data, key))
+   		sendEvent(name: "tempCurrent", value: data[key], displayed: false)
+	key = parent.getStateKey(device, acStateTargetTemp)
+	if (parent.checkValue(data, key))
+		sendEvent(name: "tempTarget", value: data[key], displayed: false)
+	key = parent.getStateKey(device, acTimeToStart)
+	if (parent.checkValue(data, key))
+		sendEvent(name: "targetTimeToStart", value: data[key], displayed: false)
+	key = parent.getStateKey(device, acTimeToStop)
+	if (parent.checkValue(data, key))
+		sendEvent(name: "targetTimeToStop", value: data[key], displayed: false)
+	if (parent.checkValue(data, key)) {
+		sendEvent(name: "operation", value: data[key], displayed: false)
+		if (data[key] == 1)
 			currentStateSwitch = "on"
-			else
+		else
 			currentStateSwitch = "off"
-			sendEvent(name: "switch", value: currentStateSwitch, descriptionText: "Was turned ${currentStateSwitch}")
-			}
-		if (parent.checkValue(data, "airState.opMode")){
-			sendEvent(name: "opMode", value: data["airState.opMode"], displayed: false)}
-		if (parent.checkValue(data, "airState.quality.sensorMon")){
-			sendEvent(name: "qualitySensorMon", value: data["airState.quality.sensorMon"], displayed: false)}
-		if (parent.checkValue(data, "airState.reservation.sleepTime")){
-			sendEvent(name: "sleepTime", value: data["airState.reservation.sleepTime"], displayed: false)}
-		if (parent.checkValue(data, "airState.reservation.targetTimeToStart")){
-			sendEvent(name: "targetTimeToStart", value: data["airState.reservation.targetTimeToStart"], displayed: false)}
-		if (parent.checkValue(data, "airState.reservation.targetTimeToStop")){
-			sendEvent(name: "targetTimeToStop", value: data["airState.reservation.targetTimeToStop"], displayed: false)}
-		if (parent.checkValue(data, "airState.tempState.current")){
-			sendEvent(name: "tempCurrent", value: data["airState.tempState.current"], displayed: false)}
-		if (parent.checkValue(data, "airState.tempState.target")){
-			sendEvent(name: "tempTarget", value: data["airState.tempState.target"], displayed: false)}
-		if (parent.checkValue(data, "airState.windStrength")) {
-			sendEvent(name: "windStrength", value: data["airState.windStrength"], displayed: false)}      
+		sendEvent(name: "switch", value: currentStateSwitch, descriptionText: "Was turned ${currentStateSwitch}")
 	}
 }
+
+def prepareCmd(operator, pdata, acState, modeStr) {
+    def String key = parent.getStateKey(device, acState)
+	if (parent.checkValue(pdata, key)) {		
+		def slurper = new groovy.json.JsonSlurper()
+		def opModeJson = slurper.parseText(modeStr)
+        def int resValue = pdata[key]
+		def stringValue = getKeyDefinition (resValue, opModeJson)	
+		sendEvent(name: operator, value: stringValue, displayed: false)
+		}
+}		
+
+def getKeyDefinition(pkey, pdata) {
+	for (item in pdata.keySet()) {
+        if (pkey == pdata[item])
+			return item
+	}
+    return null
+}		
 
 /**
 * @param level Level to log at, see LOG_LEVELS for options
